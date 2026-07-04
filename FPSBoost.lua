@@ -1,4 +1,4 @@
-wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwif not game:IsLoaded() then
+if not game:IsLoaded() then
     pcall(function() game.Loaded:Wait() end)
 end
 
