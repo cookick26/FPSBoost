@@ -221,7 +221,6 @@ FpsButton.MouseButton1Click:Connect(function()
         "tree",
         "grass",
         "bush",
-        "rock",
         "foliage",
         "plant",
         "flower",
