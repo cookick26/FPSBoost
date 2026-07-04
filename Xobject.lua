@@ -1,5 +1,6 @@
 local keywords = {
     "tree",
+    "grass",
     "bush",
     "foliage",
     "plant",
