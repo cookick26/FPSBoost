@@ -189,9 +189,7 @@ FpsButton.MouseButton1Click:Connect(function()
 
     local keywords = {
         "tree",
-        "grass",
         "bush",
-        "rock",
         "foliage",
         "plant",
         "flower",
