@@ -169,4 +169,30 @@ FpsButton.MouseButton1Click:Connect(function()
             obj:Destroy()
         end
     end
+    local keywords = {
+        "tree",
+        "grass",
+        "bush",
+        "rock",
+        "foliage",
+        "plant",
+        "flower",
+        "deco",
+        "decoration"
+    }
+
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") or obj:IsA("MeshPart") or obj:IsA("Part") then
+            local name = obj.Name:lower()
+
+            for _, keyword in ipairs(keywords) do
+                if string.find(name, keyword) then
+                    pcall(function()
+                        obj:Destroy()
+                    end)
+                    break
+                end
+            end
+        end
+    end
 end)
