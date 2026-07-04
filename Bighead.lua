@@ -1,6 +1,6 @@
 local Settings = {
     Size = 2,                   -- Размер хитбокса
-    Transparency = 0.9,          -- Прозрачность (0 - видно, 1 - невидимо)
+    Transparency = 1,          -- Прозрачность (0 - видно, 1 - невидимо)
     Color = Color3.fromRGB(255, 255, 255), -- Цвет (Красный)
     Enabled = true,              -- Включено/Выключено
     TargetPart = "Head"          -- Какую часть увеличиваем (Head или HumanoidRootPart)
