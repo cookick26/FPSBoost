@@ -22,32 +22,38 @@ end
 --------------------------------------------------------------------------------
 -- [시스템 1] CROSSHAIR (크로스헤어 설정)
 --------------------------------------------------------------------------------
-local CrosshairGui = Instance.new("ScreenGui")
-CrosshairGui.Name = "CrosshairGui"
-CrosshairGui.ResetOnSpawn = false
-CrosshairGui.Parent = targetParent -- 통합된 UI 경로 사용
+local player = game.Players.LocalPlayer
+local gui = Instance.new("ScreenGui")
+gui.Name = "CrosshairGui"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
 
-local size = 16 -- 십자가 길이 조절
-local thickness = 2
+local size = 6 -- 각 선의 길이 조절 (기존 16에서 분할되므로 8로 설정)
+local thickness = 2 -- 선의 두께 조절
+local gap = 4 -- 중앙 갭(빈 공간)의 크기 조절 (값을 키우면 더 많이 벌어집니다)
 local offsetY = -28.9 -- 위로 이동
+local color = Color3.fromRGB(0, 255, 255) -- 에임 색상
 
--- 가로선
-local horizontal = Instance.new("Frame")
-horizontal.Size = UDim2.new(0, size, 0, thickness)
-horizontal.Position = UDim2.new(0.5, 0, 0.5, offsetY)
-horizontal.AnchorPoint = Vector2.new(0.5, 0.5)
-horizontal.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
-horizontal.BorderSizePixel = 0
-horizontal.Parent = CrosshairGui
+-- 선을 생성하는 함수 (코드를 깔끔하게 만들기 위함)
+local function createLine(sizeX, sizeY, offsetX, offsetY_Pos)
+	local line = Instance.new("Frame")
+	line.Size = UDim2.new(0, sizeX, 0, sizeY)
+	line.Position = UDim2.new(0.5, offsetX, 0.5, offsetY + offsetY_Pos)
+	line.AnchorPoint = Vector2.new(0.5, 0.5)
+	line.BackgroundColor3 = color
+	line.BorderSizePixel = 0
+	line.Parent = gui
+	return line
+end
 
--- 세로선
-local vertical = Instance.new("Frame")
-vertical.Size = UDim2.new(0, thickness, 0, size)
-vertical.Position = UDim2.new(0.5, 0, 0.5, offsetY)
-vertical.AnchorPoint = Vector2.new(0.5, 0.5)
-vertical.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
-vertical.BorderSizePixel = 0
-vertical.Parent = CrosshairGui
+-- 선의 중앙 앵커 포인트 기준 위치 계산
+local offsetDistance = gap + (size / 2)
+
+-- 상, 하, 좌, 우 4개의 선 생성
+local top = createLine(thickness, size, 0, -offsetDistance)       -- 위쪽 선
+local bottom = createLine(thickness, size, 0, offsetDistance)    -- 아래쪽 선
+local left = createLine(size, thickness, -offsetDistance, 0)     -- 왼쪽 선
+local right = createLine(size, thickness, offsetDistance, 0)     -- 오른쪽 선
 
 --------------------------------------------------------------------------------
 -- [시스템 2] DELTA FPS OPTIMIZER MENU (최적화 메뉴 설정)
@@ -101,7 +107,7 @@ local MenuTitle = MainMenu:FindFirstChild("Title") or Instance.new("TextLabel")
 MenuTitle.Name = "Title"
 MenuTitle.Size = UDim2.new(1, 0, 0, 30)
 MenuTitle.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
-MenuTitle.Text = "Delta Engine Menu"
+MenuTitle.Text = "Cookick System"
 MenuTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 MenuTitle.TextSize = 13
 MenuTitle.Font = Enum.Font.SourceSansBold
