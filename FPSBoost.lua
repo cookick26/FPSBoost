@@ -1,4 +1,4 @@
-if not game:IsLoaded() then
+wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwif not game:IsLoaded() then
     pcall(function() game.Loaded:Wait() end)
 end
 
@@ -71,7 +71,7 @@ local MenuTitle = MainMenu:FindFirstChild("Title") or Instance.new("TextLabel")
 MenuTitle.Name = "Title"
 MenuTitle.Size = UDim2.new(1, 0, 0, 30)
 MenuTitle.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
-MenuTitle.Text = "Delta Engine Menu"
+MenuTitle.Text = "Cookick System"
 MenuTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 MenuTitle.TextSize = 13
 MenuTitle.Font = Enum.Font.SourceSansBold
