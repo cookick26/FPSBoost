@@ -129,7 +129,7 @@ LogoButton.MouseButton1Click:Connect(function()
     MainMenu.Visible = not MainMenu.Visible
 end)
 
--- Graphics Cleaner Engine Optimization Profile (MeshPart 최적화 추가)
+-- Graphics Cleaner Engine Optimization Profile (캐릭터 및 무기 보호 기능 추가)
 FpsButton.MouseButton1Click:Connect(function()
     FpsButton.Text = "Boosted!"
     FpsButton.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
@@ -143,32 +143,50 @@ FpsButton.MouseButton1Click:Connect(function()
         end
     end
 
+    -- 🛡️ 중요: 플레이어 캐릭터와 무기를 보호하기 위한 검사 함수
+    local function isProtected(instance)
+        -- 1. 무기(Tool)에 속해 있는지 확인
+        if instance:FindFirstAncestorOfClass("Tool") or instance:IsA("Tool") then
+            return true
+        end
+        -- 2. 플레이어 캐릭터(Humanoid를 가진 모델)에 속해 있는지 확인
+        local ancestorModel = instance:FindFirstAncestorOfClass("Model")
+        if ancestorModel and ancestorModel:FindFirstChildOfClass("Humanoid") then
+            return true
+        end
+        return false
+    end
+
     for _, obj in ipairs(Workspace:GetDescendants()) do
-        -- 일반 파트, 메쉬파트, 유니온을 모두 포함하도록 IsA("BasePart") 사용
-        if obj:IsA("BasePart") then
-            -- 에너지 쉴드(ForceField, Glass)나 투명한 파트가 아닐 때만 작동
-            if obj.Transparency == 0 and obj.Material ~= Enum.Material.ForceField and obj.Material ~= Enum.Material.Glass then
-                obj.Material = Enum.Material.SmoothPlastic
-                obj.Reflectance = 0
-                
-                -- 만약 이 오브젝트가 MeshPart라면 내부 텍스처를 강제로 지워버림 (나무 텍스처 제거)
-                if obj:IsA("MeshPart") then
-                    obj.TextureID = ""
+        -- 캐릭터나 무기 부품이면 최적화를 건너뜀 (안전 장치)
+        if not isProtected(obj) then
+            -- 일반 파트, 메쉬파트, 유니온을 모두 포함하도록 IsA("BasePart") 사용
+            if obj:IsA("BasePart") then
+                -- 에너지 쉴드(ForceField, Glass)나 투명한 파트가 아닐 때만 작동
+                if obj.Transparency == 0 and obj.Material ~= Enum.Material.ForceField and obj.Material ~= Enum.Material.Glass then
+                    obj.Material = Enum.Material.SmoothPlastic
+                    obj.Reflectance = 0
+                    
+                    -- 만약 이 오브젝트가 MeshPart라면 내부 텍스처를 강제로 지워버림
+                    if obj:IsA("MeshPart") then
+                        obj.TextureID = ""
+                    end
                 end
-            end
-        -- SpecialMesh 형태의 특수 메쉬 오브젝트 처리
-        elseif obj:IsA("SpecialMesh") then
-            if obj.Parent and obj.Parent:IsA("BasePart") and obj.Parent.Transparency == 0 then
-                obj.TextureId = ""
-            end
-        elseif obj:IsA("Texture") or obj:IsA("Decal") then
-            if obj.Parent and obj.Parent:IsA("BasePart") and obj.Parent.Transparency == 0 then
+            -- SpecialMesh 형태의 특수 메쉬 오브젝트 처리
+            elseif obj:IsA("SpecialMesh") then
+                if obj.Parent and obj.Parent:IsA("BasePart") and obj.Parent.Transparency == 0 then
+                    obj.TextureId = ""
+                end
+            elseif obj:IsA("Texture") or obj:IsA("Decal") then
+                if obj.Parent and obj.Parent:IsA("BasePart") and obj.Parent.Transparency == 0 then
+                    obj:Destroy()
+                end
+            elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") or obj:IsA("Sparkles") or obj:IsA("Fire") then
                 obj:Destroy()
             end
-        elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") or obj:IsA("Sparkles") or obj:IsA("Fire") then
-            obj:Destroy()
         end
     end
+
     local keywords = {
         "tree",
         "grass",
@@ -182,15 +200,18 @@ FpsButton.MouseButton1Click:Connect(function()
     }
 
     for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj:IsA("Model") or obj:IsA("MeshPart") or obj:IsA("Part") then
-            local name = obj.Name:lower()
+        -- 여기서도 캐릭터나 무기는 파괴하지 않도록 보호
+        if not isProtected(obj) then
+            if obj:IsA("Model") or obj:IsA("MeshPart") or obj:IsA("Part") then
+                local name = obj.Name:lower()
 
-            for _, keyword in ipairs(keywords) do
-                if string.find(name, keyword) then
-                    pcall(function()
-                        obj:Destroy()
-                    end)
-                    break
+                for _, keyword in ipairs(keywords) do
+                    if string.find(name, keyword) then
+                        pcall(function()
+                            obj:Destroy()
+                        end)
+                        break
+                    end
                 end
             end
         end
