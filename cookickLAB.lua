@@ -2,14 +2,14 @@ if not game:IsLoaded() then
     pcall(function() game.Loaded:Wait() end)
 end
 
--- 2. 서비스 및 로컬 플레이어 정의 (중복 제거 및 통합)
+-- 1. 서비스 및 로컬 플레이어 정의 (중복 선언 제거 및 최상단 통합)
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local Lighting = game:GetService("Lighting")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
--- 3. GUI 부모 경로 설정 (익스플로잇 및 일반 클라이언트 모두 호환)
+-- 2. GUI 부모 경로 설정 (익스플로잇 및 일반 클라이언트 모두 호환)
 local targetParent = nil
 if gethui then
     targetParent = gethui()
@@ -22,28 +22,27 @@ end
 --------------------------------------------------------------------------------
 -- [시스템 1] CROSSHAIR (크로스헤어 설정)
 --------------------------------------------------------------------------------
-local player = game.Players.LocalPlayer
-local gui = Instance.new("ScreenGui")
-gui.Name = "CrosshairGui"
-gui.ResetOnSpawn = false
-gui.Parent = player:WaitForChild("PlayerGui")
+local CrosshairGui = Instance.new("ScreenGui")
+CrosshairGui.Name = "CrosshairGui"
+CrosshairGui.ResetOnSpawn = false
+CrosshairGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
-local size = 4 -- 각 선의 길이 조절 (기존 16에서 분할되므로 8로 설정)
+local size = 4 -- 각 선의 길이 조절
 local thickness = 2 -- 선의 두께 조절
-local gap = 2 -- 중앙 갭(빈 공간)의 크기 조절 (값을 키우면 더 많이 벌어집니다)
+local gap = 2 -- 중앙 갭(빈 공간)의 크기 조절
 local offsetY = -28.9 -- 위로 이동
 local color = Color3.fromRGB(0, 255, 255) -- 에임 색상
 
--- 선을 생성하는 함수 (코드를 깔끔하게 만들기 위함)
+-- 선을 생성하는 함수
 local function createLine(sizeX, sizeY, offsetX, offsetY_Pos)
-	local line = Instance.new("Frame")
-	line.Size = UDim2.new(0, sizeX, 0, sizeY)
-	line.Position = UDim2.new(0.5, offsetX, 0.5, offsetY + offsetY_Pos)
-	line.AnchorPoint = Vector2.new(0.5, 0.5)
-	line.BackgroundColor3 = color
-	line.BorderSizePixel = 0
-	line.Parent = gui
-	return line
+    local line = Instance.new("Frame")
+    line.Size = UDim2.new(0, sizeX, 0, sizeY)
+    line.Position = UDim2.new(0.5, offsetX, 0.5, offsetY + offsetY_Pos)
+    line.AnchorPoint = Vector2.new(0.5, 0.5)
+    line.BackgroundColor3 = color
+    line.BorderSizePixel = 0
+    line.Parent = CrosshairGui
+    return line
 end
 
 -- 선의 중앙 앵커 포인트 기준 위치 계산
@@ -68,6 +67,9 @@ if not ScreenGui then
     ScreenGui.DisplayOrder = 9999999
     ScreenGui.Parent = targetParent
 end
+
+-- ⚙️ 초기 설정: 스크립트 실행 시 처음에는 메뉴가 보이지 않도록 숨김 처리
+ScreenGui.Enabled = false 
 
 -- 1. TOPBAR FLOATING TOGGLE BUTTON
 local LogoButton = ScreenGui:FindFirstChild("DeltaToggleBtn") or Instance.new("TextButton")
@@ -124,7 +126,7 @@ FpsButton.Name = "FpsButton"
 FpsButton.Size = UDim2.new(0.9, 0, 0, 40)
 FpsButton.Position = UDim2.new(0.05, 0, 0, 45) 
 FpsButton.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
-FpsButton.Text = "FPS Unlocker"
+FpsButton.Text = "FPS Booster"
 FpsButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 FpsButton.TextSize = 13
 FpsButton.Font = Enum.Font.SourceSansBold
@@ -138,6 +140,13 @@ FpsCorner.Parent = FpsButton
 --------------------------------------------------------------------------------
 -- 상호작용 및 최적화 작동 로직 (INTERACTION OPERATIONS FRAMEWORK)
 --------------------------------------------------------------------------------
+
+-- ⌨️ Insert 키 입력 시 메뉴 UI 토글 기능 (채팅 중 입력 방지 예외처리 포함)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.Insert then
+        ScreenGui.Enabled = not ScreenGui.Enabled
+    end
+end)
 
 -- 메뉴 버튼 드래그 기능
 local dragging, dragStart, startPos
@@ -162,7 +171,7 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- 메뉴 켜기/끄기
+-- 메뉴 켜기/끄기 (MENU 버튼 클릭 시 메인 패널 토글)
 LogoButton.MouseButton1Click:Connect(function()
     MainMenu.Visible = not MainMenu.Visible
 end)
