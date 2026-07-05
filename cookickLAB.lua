@@ -28,9 +28,9 @@ gui.Name = "CrosshairGui"
 gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
-local size = 2 -- 각 선의 길이 조절 (기존 16에서 분할되므로 8로 설정)
+local size = 3.5 -- 각 선의 길이 조절 (기존 16에서 분할되므로 8로 설정)
 local thickness = 2 -- 선의 두께 조절
-local gap = 1 -- 중앙 갭(빈 공간)의 크기 조절 (값을 키우면 더 많이 벌어집니다)
+local gap = 1.5 -- 중앙 갭(빈 공간)의 크기 조절 (값을 키우면 더 많이 벌어집니다)
 local offsetY = -28.9 -- 위로 이동
 local color = Color3.fromRGB(0, 255, 255) -- 에임 색상
 
