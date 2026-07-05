@@ -10,7 +10,7 @@ local keywords = {
     "decoration"
 }
 
--- Workspace 안의 모든 오브젝트를 한 번만 탐색합니다.
+-- Workspace 안의 모든 오브젝트를 탐색합니다.
 for _, obj in ipairs(game:GetService("Workspace"):GetDescendants()) do
     local nameLower = obj.Name:lower()
     local shouldDestroy = false
@@ -34,6 +34,8 @@ for _, obj in ipairs(game:GetService("Workspace"):GetDescendants()) do
             obj.Transparency = 0.36
         elseif obj:IsA("Part") and obj.Name == "Divider" then
             obj.Transparency = 0.53
+        elseif obj:IsA("MeshPart") and obj.Name == "Rubble Pile" then
+            obj.Transparency = 0.4
         end
     end
 end
