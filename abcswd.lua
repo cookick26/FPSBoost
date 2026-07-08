@@ -177,33 +177,8 @@ FpsButton.MouseButton1Click:Connect(function()
         end
     end
 
-    -- 🛡️ [수정 핵심]: 알려주신 유리 특성을 기반으로 완벽한 방어막을 구축합니다.
-    local function isGlass(instance)
-        -- 1. 본인이 유리 파트인지 확인 (종류가 Part(BasePart)이고, 이름이 Collision이거나 재질이 Glass인 경우)
-        if instance:IsA("BasePart") then
-            local isCollisionName = string.find(string.lower(instance.Name), "collision")
-            local isGlassMaterial = (instance.Material == Enum.Material.Glass)
-            
-            if isCollisionName or isGlassMaterial then
-                return true
-            end
-        end
-        
-        -- 2. 본인이 텍스처나 데칼인데, 부모(붙어있는 파트)가 유리인 경우도 보호 (유리창 안 깨지게)
-        if instance.Parent and instance.Parent:IsA("BasePart") then
-            local isParentCollisionName = string.find(string.lower(instance.Parent.Name), "collision")
-            local isParentGlassMaterial = (instance.Parent.Material == Enum.Material.Glass)
-            
-            if isParentCollisionName or isParentGlassMaterial then
-                return true
-            end
-        end
-        
-        return false
-    end
-
+    -- 🛡️ 기본 보호 필터 (캐릭터 및 툴 안전장치)
     local function isProtected(instance)
-        -- 무기 및 캐릭터 보호
         if instance:FindFirstAncestorOfClass("Tool") or instance:IsA("Tool") then
             return true
         end
@@ -211,32 +186,46 @@ FpsButton.MouseButton1Click:Connect(function()
         if ancestorModel and ancestorModel:FindFirstChildOfClass("Humanoid") then
             return true
         end
-        
-        -- 위에서 만든 유리 판독기를 통과하면 무조건 보호!
-        if isGlass(instance) then
-            return true
-        end
-        
         return false
     end
 
     -- 맵 텍스처 최적화 루프
     for _, obj in ipairs(Workspace:GetDescendants()) do
-        -- 찰흙으로 바꿀 대상들 (유리, 캐릭터, 무기는 패스)
         if not isProtected(obj) then
             
             if obj:IsA("BasePart") then
-                if obj.Material ~= Enum.Material.ForceField then
-                    obj.Material = Enum.Material.SmoothPlastic
-                    obj.Reflectance = 0
-                    if obj:IsA("MeshPart") then
-                        obj.TextureID = ""
+                -- 🚨 [2중 잠금장치] 유리창의 특성을 완벽히 가려내어 아예 변경 명령줄을 통과하지 못하게 만듭니다.
+                local objNameLower = string.lower(obj.Name)
+                local isCollision = (objNameLower == "collision" or string.find(objNameLower, "collision"))
+                local isGlass = (obj.Material == Enum.Material.Glass)
+
+                -- 이름이 Collision이거나 재질이 Glass인 파트라면 아무 작업도 하지 않고 패스!
+                if isCollision or isGlass then
+                    -- 유리의 원래 투명도와 재질을 그대로 둡니다. (강제 복구 코드 적용)
+                    obj.Material = Enum.Material.Glass
+                else
+                    -- 유리가 아닌 '진짜 건물 벽이나 오브젝트'만 여기로 들어와 찰흙으로 바뀝니다.
+                    if obj.Material ~= Enum.Material.ForceField then
+                        obj.Material = Enum.Material.SmoothPlastic
+                        obj.Reflectance = 0
+                        if obj:IsA("MeshPart") then
+                            obj.TextureID = ""
+                        end
                     end
                 end
+                
             elseif obj:IsA("SpecialMesh") then
-                obj.TextureId = ""
+                -- 부모가 유리가 아닌 경우에만 텍스처를 지웁니다.
+                if obj.Parent and not (string.lower(obj.Parent.Name) == "collision" or obj.Parent.Material == Enum.Material.Glass) then
+                    obj.TextureId = ""
+                end
+                
             elseif obj:IsA("Texture") or obj:IsA("Decal") then
-                obj:Destroy()
+                -- 부모가 유리가 아닌 경우에만 텍스처 스티커를 지웁니다.
+                if obj.Parent and not (string.lower(obj.Parent.Name) == "collision" or obj.Parent.Material == Enum.Material.Glass) then
+                    obj:Destroy()
+                end
+                
             elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") or obj:IsA("Sparkles") or obj:IsA("Fire") then
                 obj:Destroy()
             end
@@ -258,7 +247,11 @@ FpsButton.MouseButton1Click:Connect(function()
 
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if not isProtected(obj) then
-            if obj:IsA("Model") or obj:IsA("MeshPart") or obj:IsA("Part") then
+            -- 삭제 대상 중에서도 유리는 무조건 제외합니다.
+            local nameLower = obj.Name:lower()
+            local isGlassObject = (nameLower == "collision" or string.find(nameLower, "collision") or (obj:IsA("BasePart") and obj.Material == Enum.Material.Glass))
+            
+            if not isGlassObject and (obj:IsA("Model") or obj:IsA("MeshPart") or obj:IsA("Part")) then
                 local name = obj.Name:lower()
                 for _, keyword in ipairs(keywords) do
                     if string.find(name, keyword) then
