@@ -1,11 +1,14 @@
 if not game:IsLoaded() then
-     pcall(function() game.Loaded:Wait() end)
+    pcall(function() game.Loaded:Wait() end)
 end
 
 --------------------------------------------------------------------------------
--- [재질 설정 변수] 건물들을 바꿀 최적화 재질입니다.
+-- [★ 최적화 및 유리 보호 설정 변수]
 --------------------------------------------------------------------------------
-_G.TargetMaterial = Enum.Material.Plastic 
+_G.TargetMaterial = Enum.Material.Plastic       -- 일반 건물 벽들을 바꿀 최적화 재질
+_G.ProtectMeshPartTextures = false              -- [★치트키] 만약 유리창이 자꾸 찰흙으로 변하면 
+                                                -- 이 글자를 true 로 바꾸고 실행하세요!
+--------------------------------------------------------------------------------
 
 -- 1. 서비스 및 로컬 플레이어 정의
 local Players = game:GetService("Players")
@@ -24,13 +27,22 @@ else
     targetParent = LocalPlayer:WaitForChild("PlayerGui", 5) or LocalPlayer:FindFirstChildOfClass("PlayerGui")
 end
 
+-- 구버전 GUI 및 기능 완전히 청소 (코드 중첩 버그 방지)
+if targetParent:FindFirstChild("DeltaTopBarSystem") then
+    targetParent.DeltaTopBarSystem:Destroy()
+end
+local playerGui = LocalPlayer:WaitForChild("PlayerGui")
+if playerGui:FindFirstChild("CrosshairGui") then
+    playerGui.CrosshairGui:Destroy()
+end
+
 --------------------------------------------------------------------------------
 -- [시스템 1] CROSSHAIR (크로스헤어 설정)
 --------------------------------------------------------------------------------
 local CrosshairGui = Instance.new("ScreenGui")
 CrosshairGui.Name = "CrosshairGui"
 CrosshairGui.ResetOnSpawn = false
-CrosshairGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+CrosshairGui.Parent = playerGui
 
 local size = 4 
 local thickness = 2 
@@ -58,19 +70,16 @@ local right = createLine(size, thickness, offsetDistance, 0)
 --------------------------------------------------------------------------------
 -- [시스템 2] DELTA FPS OPTIMIZER MENU (최적화 메뉴 설정)
 --------------------------------------------------------------------------------
-local ScreenGui = targetParent:FindFirstChild("DeltaTopBarSystem")
-if not ScreenGui then
-    ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "DeltaTopBarSystem"
-    ScreenGui.ResetOnSpawn = false
-    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    ScreenGui.DisplayOrder = 9999999
-    ScreenGui.Parent = targetParent
-end
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "DeltaTopBarSystem"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.DisplayOrder = 9999999
+ScreenGui.Parent = targetParent
 
 ScreenGui.Enabled = false 
 
-local LogoButton = ScreenGui:FindFirstChild("DeltaToggleBtn") or Instance.new("TextButton")
+local LogoButton = Instance.new("TextButton")
 LogoButton.Name = "DeltaToggleBtn"
 LogoButton.Size = UDim2.new(0, 50, 0, 32)
 LogoButton.Position = UDim2.new(0, 15, 0, 15) 
@@ -84,11 +93,11 @@ LogoButton.Active = true
 LogoButton.Visible = true
 LogoButton.Parent = ScreenGui
 
-local LogoCorner = LogoButton:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
+local LogoCorner = Instance.new("UICorner")
 LogoCorner.CornerRadius = UDim.new(0, 6)
 LogoCorner.Parent = LogoButton
 
-local MainMenu = ScreenGui:FindFirstChild("DeltaMainPanel") or Instance.new("Frame")
+local MainMenu = Instance.new("Frame")
 MainMenu.Name = "DeltaMainPanel"
 MainMenu.Size = UDim2.new(0, 180, 0, 100) 
 MainMenu.Position = UDim2.new(0.5, -90, 0.4, -50)
@@ -98,11 +107,11 @@ MainMenu.Visible = false
 MainMenu.ZIndex = 500
 MainMenu.Parent = ScreenGui
 
-local MainMenuCorner = MainMenu:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
+local MainMenuCorner = Instance.new("UICorner")
 MainMenuCorner.CornerRadius = UDim.new(0, 8)
 MainMenuCorner.Parent = MainMenu
 
-local MenuTitle = MainMenu:FindFirstChild("Title") or Instance.new("TextLabel")
+local MenuTitle = Instance.new("TextLabel")
 MenuTitle.Name = "Title"
 MenuTitle.Size = UDim2.new(1, 0, 0, 30)
 MenuTitle.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
@@ -113,11 +122,11 @@ MenuTitle.Font = Enum.Font.SourceSansBold
 MenuTitle.ZIndex = 501
 MenuTitle.Parent = MainMenu
 
-local MenuTitleCorner = MenuTitle:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
+local MenuTitleCorner = Instance.new("UICorner")
 MenuTitleCorner.CornerRadius = UDim.new(0, 8)
 MenuTitleCorner.Parent = MainMenu
 
-local FpsButton = MainMenu:FindFirstChild("FpsButton") or Instance.new("TextButton")
+local FpsButton = Instance.new("TextButton")
 FpsButton.Name = "FpsButton"
 FpsButton.Size = UDim2.new(0.9, 0, 0, 40)
 FpsButton.Position = UDim2.new(0.05, 0, 0, 45) 
@@ -129,7 +138,7 @@ FpsButton.Font = Enum.Font.SourceSansBold
 FpsButton.ZIndex = 502
 FpsButton.Parent = MainMenu
 
-local FpsCorner = FpsButton:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
+local FpsCorner = Instance.new("UICorner")
 FpsCorner.CornerRadius = UDim.new(0, 4)
 FpsCorner.Parent = FpsButton
 
@@ -182,23 +191,25 @@ FpsButton.MouseButton1Click:Connect(function()
         end
     end
 
-    -- 🛡️ [수정 핵심 1]: 유리를 조상(부모의 부모까지) 단위로 추적하는 무적 필터
+    -- 🛡️ [수정 핵심]: 투명도가 있거나 유리창 키워드가 들어간 MeshPart를 감지하는 필터
     local function isGlassObject(instance)
         if not instance or not instance:IsA("Instance") then return false end
         
-        -- 1. 본인 탐지 (재질이 Glass이거나 이름에 collision/glass가 포함된 경우)
-        if instance:IsA("BasePart") and instance.Material == Enum.Material.Glass then
-            return true
+        -- 1. 본인 검사 (유리 재질이거나, 투명도가 0보다 큰 경우 유리창으로 판단)
+        if instance:IsA("BasePart") then
+            if instance.Material == Enum.Material.Glass or instance.Transparency > 0 then
+                return true
+            end
         end
         
-        -- 2. 조상 탐지 (부모, 조부모 폴더/모델 중 하나라도 이름에 collision이나 glass가 포함된 경우)
+        -- 2. 조상 검사 (부모 폴더 중 유리창/윈도우 관련 단어가 있거나 투명한 파트가 포함된 경우)
         local current = instance
         while current and current ~= Workspace and current ~= game do
             local nameLower = string.lower(current.Name)
-            if string.find(nameLower, "collision") or string.find(nameLower, "glass") then
+            if string.find(nameLower, "collision") or string.find(nameLower, "glass") or string.find(nameLower, "window") or string.find(nameLower, "pane") then
                 return true
             end
-            if current:IsA("BasePart") and current.Material == Enum.Material.Glass then
+            if current:IsA("BasePart") and (current.Material == Enum.Material.Glass or current.Transparency > 0) then
                 return true
             end
             current = current.Parent
@@ -219,27 +230,42 @@ FpsButton.MouseButton1Click:Connect(function()
         return false
     end
 
-    -- 맵 텍스처 최적화 루프
+    -- 맵 최적화 대규모 루프
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if not isProtected(obj) then
             
-            -- ★ 조상 추적 필터에 걸리면 유리에 관련된 모든 파트/텍스처는 스킵합니다.
+            -- 유리 감지망에 걸린 필터는 텍스처와 형태를 완벽히 유지
             if isGlassObject(obj) then
-                -- 아무것도 건드리지 않고 원본(재질, 투명도, 반사율)을 고스란히 유지합니다.
+                if obj:IsA("BasePart") and obj.Material == Enum.Material.Glass then
+                    obj.Material = Enum.Material.Glass
+                end
             else
-                -- 유리가 절대 아닌 진짜 건물 벽, 도로 등만 찰흙(최적화) 처리합니다.
+                -- 유리가 아닌 일반 건물, 도로 등만 최적화 진행
                 if obj:IsA("BasePart") then
-                    if obj.Material ~= Enum.Material.ForceField then
-                        obj.Material = _G.TargetMaterial
-                        obj.Reflectance = 0
-                        if obj:IsA("MeshPart") then
-                            obj.TextureID = ""
+                    local nameLower = string.lower(obj.Name)
+                    -- 3중 예외 처리 필터링
+                    if not string.find(nameLower, "collision") and not string.find(nameLower, "glass") and not string.find(nameLower, "window") and obj.Material ~= Enum.Material.Glass then
+                        if obj.Material ~= Enum.Material.ForceField then
+                            obj.Material = _G.TargetMaterial
+                            obj.Reflectance = 0
+                            
+                            -- [★옵션]: ProtectMeshPartTextures 가 false 일 때만 MeshPart 텍스처 제거
+                            if obj:IsA("MeshPart") and not _G.ProtectMeshPartTextures then
+                                obj.TextureID = ""
+                            end
                         end
                     end
                 elseif obj:IsA("SpecialMesh") then
-                    obj.TextureId = ""
-                elseif obj:IsA("Texture") or obj:IsA("Decal") or obj:IsA("SurfaceAppearance") then
+                    if not _G.ProtectMeshPartTextures then
+                        obj.TextureId = ""
+                    end
+                elseif obj:IsA("Texture") or obj:IsA("Decal") then
                     obj:Destroy()
+                elseif obj:IsA("SurfaceAppearance") then
+                    -- [★옵션]: ProtectMeshPartTextures 가 false 일 때만 정밀 텍스처 제거
+                    if not _G.ProtectMeshPartTextures then
+                        obj:Destroy()
+                    end
                 elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") or obj:IsA("Sparkles") or obj:IsA("Fire") then
                     obj:Destroy()
                 end
@@ -250,20 +276,12 @@ FpsButton.MouseButton1Click:Connect(function()
 
     -- 불필요한 장식품 제거 목록
     local keywords = {
-        "tree",
-        "grass",
-        "bush",
-        "foliage",
-        "plant",
-        "flower",
-        "deco",
-        "decoration",
-        "glass" -- 유저님이 원하신 일반 유리 제거 키워드 유지
+        "tree", "grass", "bush", "foliage", "plant", "flower", "deco", "decoration", "glass"
     }
 
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if not isProtected(obj) then
-            -- 제거 대상 키워드에 부합하더라도, 우리가 지켜야 할 'Collision' 유리 그룹이면 절대 지우지 않습니다.
+            -- 우리가 지켜야 할 투명 유리창은 자동 제거 목록에 들어가도 파괴하지 않음
             if not isGlassObject(obj) and (obj:IsA("Model") or obj:IsA("MeshPart") or obj:IsA("Part")) then
                 local name = obj.Name:lower()
                 for _, keyword in ipairs(keywords) do
