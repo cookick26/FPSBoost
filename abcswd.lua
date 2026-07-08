@@ -177,7 +177,9 @@ FpsButton.MouseButton1Click:Connect(function()
         end
     end
 
+    -- 🛡️ [수정 핵심]: 보호 대상에 유리를 포함시킵니다.
     local function isProtected(instance)
+        -- 1. 무기나 캐릭터 보호
         if instance:FindFirstAncestorOfClass("Tool") or instance:IsA("Tool") then
             return true
         end
@@ -185,28 +187,28 @@ FpsButton.MouseButton1Click:Connect(function()
         if ancestorModel and ancestorModel:FindFirstChildOfClass("Humanoid") then
             return true
         end
+        
+        -- 2. 유리 재질이거나 이름이 Collision인 경우 완벽하게 보호 (건드리지 않음)
+        if instance:IsA("BasePart") and (instance.Material == Enum.Material.Glass or string.lower(instance.Name) == "collision") then
+            return true
+        end
+        
+        -- 3. 유리 파트 내부에 들어있는 데칼이나 텍스처도 삭제되지 않게 보호
+        if instance.Parent and instance.Parent:IsA("BasePart") then
+            if instance.Parent.Material == Enum.Material.Glass or string.lower(instance.Parent.Name) == "collision" then
+                return true
+            end
+        end
+        
         return false
     end
 
-    -- 맵 최적화 루프
+    -- 맵 텍스처 최적화 루프
     for _, obj in ipairs(Workspace:GetDescendants()) do
+        -- 유리를 제외한 건물과 맵 오브젝트들만 이 구문을 통과합니다.
         if not isProtected(obj) then
-            
-            -- [★ 수정 핵심]: 이름이 Collision이거나 재질이 Glass인 파트는 무조건 투명도를 1로 덮어씌우고 강제 고정합니다.
-            if obj:IsA("BasePart") and (string.lower(obj.Name) == "collision" or obj.Material == Enum.Material.Glass) then
-                obj.Transparency = 1
-                obj.LocalTransparencyModifier = 1
-                
-                -- 내부에 들어있는 텍스처나 데칼도 함께 투명화 처리
-                for _, child in ipairs(obj:GetChildren()) do
-                    if child:IsA("Texture") or child:IsA("Decal") then
-                        child.Transparency = 1
-                    end
-                end
-                
-            -- 일반 파트 최적화 로직
-            elseif obj:IsA("BasePart") then
-                if obj.Material ~= Enum.Material.ForceField and obj.Material ~= Enum.Material.Glass then
+            if obj:IsA("BasePart") then
+                if obj.Material ~= Enum.Material.ForceField then
                     obj.Material = Enum.Material.SmoothPlastic
                     obj.Reflectance = 0
                     if obj:IsA("MeshPart") then
@@ -214,20 +216,16 @@ FpsButton.MouseButton1Click:Connect(function()
                     end
                 end
             elseif obj:IsA("SpecialMesh") then
-                if obj.Parent and obj.Parent:IsA("BasePart") and obj.Parent.Transparency == 0 then
-                    obj.TextureId = ""
-                end
+                obj.TextureId = ""
             elseif obj:IsA("Texture") or obj:IsA("Decal") then
-                if obj.Parent and obj.Parent:IsA("BasePart") and obj.Parent.Transparency == 0 then
-                    obj.Destroy()
-                end
+                obj:Destroy()
             elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") or obj:IsA("Sparkles") or obj:IsA("Fire") then
                 obj:Destroy()
             end
         end
     end
 
-    -- 불필요한 장식품 제거 파트
+    -- 불필요한 장식품 제거 목록 (안전하게 "glass" 제외됨)
     local keywords = {
         "tree",
         "grass",
