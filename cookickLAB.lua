@@ -255,7 +255,7 @@ FpsButton.MouseButton1Click:Connect(function()
         end
     end
 
-    local keywords = {"tree", "glass", "grass", "bush", "foliage", "plant", "flower", "deco", "decoration"}
+    local keywords = {"tree", "grass", "bush", "foliage", "plant", "flower", "deco", "decoration"}
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if not isProtected(obj) then
             if obj:IsA("Model") or obj:IsA("MeshPart") or obj:IsA("Part") then
