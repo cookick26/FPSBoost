@@ -2,18 +2,12 @@ if not game:IsLoaded() then
     pcall(function() game.Loaded:Wait() end)
 end
 
---------------------------------------------------------------------------------
--- [재질 설정 변수] 건물들을 바꿀 최적화 재질입니다.
---------------------------------------------------------------------------------
-_G.TargetMaterial = Enum.Material.Plastic 
-
 -- 1. 서비스 및 로컬 플레이어 정의
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local Lighting = game:GetService("Lighting")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local Mouse = LocalPlayer:GetMouse()
 
 -- 2. GUI 부모 경로 설정
 local targetParent = nil
@@ -66,7 +60,7 @@ local left = createLine(size, thickness, -offsetDistance, 0)
 local right = createLine(size, thickness, offsetDistance, 0)     
 
 --------------------------------------------------------------------------------
--- [시스템 2] DELTA FPS OPTIMIZER MENU (최적화 메뉴 설정)
+-- [시스템 2] DELTA FPS OPTIMIZER MENU (UI 슬림화)
 --------------------------------------------------------------------------------
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "DeltaTopBarSystem"
@@ -97,8 +91,8 @@ LogoCorner.Parent = LogoButton
 
 local MainMenu = Instance.new("Frame")
 MainMenu.Name = "DeltaMainPanel"
-MainMenu.Size = UDim2.new(0, 180, 0, 140) 
-MainMenu.Position = UDim2.new(0.5, -90, 0.4, -70)
+MainMenu.Size = UDim2.new(0, 180, 0, 100) 
+MainMenu.Position = UDim2.new(0.5, -90, 0.4, -50)
 MainMenu.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
 MainMenu.BorderSizePixel = 0
 MainMenu.Visible = false
@@ -126,7 +120,7 @@ MenuTitleCorner.Parent = MenuTitle
 
 local FpsButton = Instance.new("TextButton")
 FpsButton.Name = "FpsButton"
-FpsButton.Size = UDim2.new(0.9, 0, 0, 35)
+FpsButton.Size = UDim2.new(0.9, 0, 0, 40)
 FpsButton.Position = UDim2.new(0.05, 0, 0, 45) 
 FpsButton.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
 FpsButton.Text = "FPS Booster"
@@ -140,74 +134,8 @@ local FpsCorner = Instance.new("UICorner")
 FpsCorner.CornerRadius = UDim.new(0, 4)
 FpsCorner.Parent = FpsButton
 
-local SelectButton = Instance.new("TextButton")
-SelectButton.Name = "SelectButton"
-SelectButton.Size = UDim2.new(0.9, 0, 0, 35)
-SelectButton.Position = UDim2.new(0.05, 0, 0, 90) 
-SelectButton.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
-SelectButton.Text = "Select Glass (유리 지정)"
-SelectButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-SelectButton.TextSize = 12
-SelectButton.Font = Enum.Font.SourceSansBold
-SelectButton.ZIndex = 502
-SelectButton.Parent = MainMenu
-
-local SelectCorner = Instance.new("UICorner")
-SelectCorner.CornerRadius = UDim.new(0, 4)
-SelectCorner.Parent = SelectButton
-
 --------------------------------------------------------------------------------
--- 🛡️ [수정 핵심]: 고유 3D 입체모양(MeshId) 기반 보호 시스템 변수
---------------------------------------------------------------------------------
-local WhitelistedMeshIds = {} -- 이미지 대신 3D 형태를 저장할 테이블
-local WhitelistedObjects = {}
-local isSelecting = false
-
-SelectButton.MouseButton1Click:Connect(function()
-    isSelecting = not isSelecting
-    if isSelecting then
-        SelectButton.Text = "Click the Glass in Game!"
-        SelectButton.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-    else
-        SelectButton.Text = "Select Glass (유리 지정)"
-        SelectButton.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
-    end
-end)
-
--- 마우스 클릭 시 유리의 3D 모양 데이터를 기억하는 로직
-Mouse.Button1Down:Connect(function()
-    if isSelecting and Mouse.Target then
-        local target = Mouse.Target
-        
-        -- 오브젝트 본인 및 부모 등록
-        WhitelistedObjects[target] = true
-        local p = target.Parent
-        if p and p ~= Workspace then
-            WhitelistedObjects[p] = true
-        end
-        
-        -- ★ [변경 사항]: 텍스처 대신 3D 형태 정보인 MeshId를 추출하여 등록합니다.
-        if target:IsA("MeshPart") and target.MeshId ~= "" then
-            WhitelistedMeshIds[target.MeshId] = true
-        end
-        
-        local mesh = target:FindFirstChildOfClass("SpecialMesh")
-        if mesh and mesh.MeshId ~= "" then
-            WhitelistedMeshIds[mesh.MeshId] = true
-        end
-        
-        SelectButton.Text = "Locked: " .. target.Name .. "!"
-        SelectButton.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
-        isSelecting = false
-        
-        task.wait(1.5)
-        SelectButton.Text = "Select Another Glass (추가 지정)"
-        SelectButton.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
-    end
-end)
-
---------------------------------------------------------------------------------
--- GUI 작동 단축키 및 드래그
+-- GUI 작동 및 드래그 로직
 --------------------------------------------------------------------------------
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if not gameProcessed and input.KeyCode == Enum.KeyCode.Insert then
@@ -242,61 +170,22 @@ LogoButton.MouseButton1Click:Connect(function()
 end)
 
 --------------------------------------------------------------------------------
--- 최적화 메인 실행 함수
+-- 최적화 메인 실행 함수 (텍스처 보존 + 엔진 레벨 렌더링 최적화)
 --------------------------------------------------------------------------------
 FpsButton.MouseButton1Click:Connect(function()
-    if isSelecting then return end 
-    
     FpsButton.Text = "Boosted!"
     FpsButton.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
     FpsButton.Active = false
     
+    -- 1. 가장 큰 렉의 원인인 그림자 및 조명 효과 완전 제거
     Lighting.GlobalShadows = false
-    
     for _, obj in ipairs(Lighting:GetChildren()) do
         if obj:IsA("PostEffect") or obj:IsA("BloomEffect") or obj:IsA("BlurEffect") or obj:IsA("ColorCorrectionEffect") or obj:IsA("SunRaysEffect") then
             obj:Destroy()
         end
     end
 
-    -- 유리를 정밀 판별하는 필터 함수
-    local function isGlassObject(instance)
-        if not instance or not instance:IsA("Instance") then return false end
-        
-        -- 1. 유저가 직접 수동 클릭한 개체인가?
-        if WhitelistedObjects[instance] or WhitelistedObjects[instance.Parent] then
-            return true
-        end
-        
-        -- 2. ★ [변경 사항]: 유저가 클릭했던 유리와 같은 3D 형태(MeshId)를 가졌는가?
-        if instance:IsA("MeshPart") and WhitelistedMeshIds[instance.MeshId] then
-            return true
-        end
-        
-        local mesh = instance:FindFirstChildOfClass("SpecialMesh")
-        if mesh and WhitelistedMeshIds[mesh.MeshId] then
-            return true
-        end
-        
-        -- 3. 시스템 자동 감지 (유리 재질이거나 투명도가 있는가?)
-        if instance:IsA("BasePart") and (instance.Material == Enum.Material.Glass or instance.Transparency > 0) then
-            return true
-        end
-        
-        -- 4. 조상 폴더 이름 탐지
-        local current = instance
-        while current and current ~= Workspace and current ~= game do
-            local nameLower = string.lower(current.Name)
-            if string.find(nameLower, "collision") or string.find(nameLower, "glass") or string.find(nameLower, "window") then
-                return true
-            end
-            current = current.Parent
-        end
-        
-        return false
-    end
-
-    -- 플레이어 캐릭터 및 도구 보호 필터
+    -- 캐릭터 보호 필터
     local function isProtected(instance)
         if instance:FindFirstAncestorOfClass("Tool") or instance:IsA("Tool") then
             return true
@@ -308,46 +197,44 @@ FpsButton.MouseButton1Click:Connect(function()
         return false
     end
 
-    -- 대규모 맵 최적화 루프
+    -- 2. 대규모 맵 최적화 루프 (텍스처 유지 + 렌더링 경량화)
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if not isProtected(obj) then
-            
-            -- 유저가 지정한 3D 형태의 유리창 모델들은 완벽 통과 (보호 성공)
-            if isGlassObject(obj) then
-                -- 원본 상태 유지
-            else
-                -- 형태가 다른 나머지 일반 건물, 도로 등만 골라내어 텍스처 삭제 및 최적화 진행
-                if obj:IsA("BasePart") then
-                    if obj.Material ~= Enum.Material.ForceField then
-                        obj.Material = _G.TargetMaterial
-                        obj.Reflectance = 0
-                        if obj:IsA("MeshPart") then
-                            obj.TextureID = "" -- 이제 건물의 텍스처만 안전하게 삭제됩니다!
-                        end
-                    end
-                elseif obj:IsA("SpecialMesh") then
-                    obj.TextureId = ""
-                elseif obj:IsA("Texture") or obj:IsA("Decal") or obj:IsA("SurfaceAppearance") then
-                    obj:Destroy()
-                elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") or obj:IsA("Sparkles") or obj:IsA("Fire") then
+            if obj:IsA("BasePart") then
+                -- 그림자를 꺼서 연산 속도 대폭 향상
+                obj.CastShadow = false
+                obj.Reflectance = 0
+                
+                -- ★ [핵심 코드]: 통짜 메쉬의 그림(텍스처)은 그대로 놔두고, 로블록스 엔진 자체의 렌더링 정밀도를 낮춰 렉을 줄입니다.
+                if obj:IsA("MeshPart") then
+                    pcall(function()
+                        obj.RenderFidelity = Enum.RenderFidelity.Performance
+                    end)
+                end
+            elseif obj:IsA("Texture") or obj:IsA("Decal") then
+                -- 건물 본체 텍스처가 아닌 일반 스티커(데칼)만 제거
+                local p = obj.Parent
+                if p and not p:IsA("MeshPart") then
                     obj:Destroy()
                 end
+            -- 연기, 불, 반짝임 등 프레임 드랍 유발 요소 무조건 제거
+            elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") or obj:IsA("Sparkles") or obj:IsA("Fire") then
+                obj:Destroy()
             end
-            
         end
     end
 
-    -- 잡초 및 나무 제거 목록
+    -- 3. 렉 유발 1순위인 잡초/나무/장식품 에셋 완전 박멸
     local keywords = {
         "tree", "grass", "bush", "foliage", "plant", "flower", "deco", "decoration"
     }
 
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if not isProtected(obj) then
-            if not isGlassObject(obj) and (obj:IsA("Model") or obj:IsA("MeshPart") or obj:IsA("Part")) then
+            if obj:IsA("Model") or obj:IsA("MeshPart") or obj:IsA("Part") then
                 local name = obj.Name:lower()
                 for _, keyword in ipairs(keywords) do
-                    if string.find(name, keyword) then
+                    if string.find(name, keyword) and not string.find(name, "window") and not string.find(name, "glass") then
                         pcall(function()
                             obj:Destroy()
                         end)
