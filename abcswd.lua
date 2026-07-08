@@ -3,12 +3,9 @@ if not game:IsLoaded() then
 end
 
 --------------------------------------------------------------------------------
--- [★ 최적화 및 유리 보호 설정 변수]
+-- [재질 설정 변수] 건물들을 바꿀 최적화 재질입니다.
 --------------------------------------------------------------------------------
-_G.TargetMaterial = Enum.Material.Plastic       -- 일반 건물 벽들을 바꿀 최적화 재질
-_G.ProtectMeshPartTextures = false              -- [★치트키] 만약 유리창이 자꾸 찰흙으로 변하면 
-                                                -- 이 글자를 true 로 바꾸고 실행하세요!
---------------------------------------------------------------------------------
+_G.TargetMaterial = Enum.Material.Plastic 
 
 -- 1. 서비스 및 로컬 플레이어 정의
 local Players = game:GetService("Players")
@@ -16,6 +13,7 @@ local Workspace = game:GetService("Workspace")
 local Lighting = game:GetService("Lighting")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
 
 -- 2. GUI 부모 경로 설정
 local targetParent = nil
@@ -27,7 +25,7 @@ else
     targetParent = LocalPlayer:WaitForChild("PlayerGui", 5) or LocalPlayer:FindFirstChildOfClass("PlayerGui")
 end
 
--- 구버전 GUI 및 기능 완전히 청소 (코드 중첩 버그 방지)
+-- 구버전 GUI 완전 청소
 if targetParent:FindFirstChild("DeltaTopBarSystem") then
     targetParent.DeltaTopBarSystem:Destroy()
 end
@@ -68,7 +66,7 @@ local left = createLine(size, thickness, -offsetDistance, 0)
 local right = createLine(size, thickness, offsetDistance, 0)     
 
 --------------------------------------------------------------------------------
--- [시스템 2] DELTA FPS OPTIMIZER MENU (최적화 메뉴 설정)
+-- [시스템 2] DELTA FPS OPTIMIZER MENU (메뉴 크기 및 버튼 확장)
 --------------------------------------------------------------------------------
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "DeltaTopBarSystem"
@@ -99,8 +97,8 @@ LogoCorner.Parent = LogoButton
 
 local MainMenu = Instance.new("Frame")
 MainMenu.Name = "DeltaMainPanel"
-MainMenu.Size = UDim2.new(0, 180, 0, 100) 
-MainMenu.Position = UDim2.new(0.5, -90, 0.4, -50)
+MainMenu.Size = UDim2.new(0, 180, 0, 140) -- 버튼 추가를 위해 세로 크기 확장 (100 -> 140)
+MainMenu.Position = UDim2.new(0.5, -90, 0.4, -70)
 MainMenu.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
 MainMenu.BorderSizePixel = 0
 MainMenu.Visible = false
@@ -124,11 +122,12 @@ MenuTitle.Parent = MainMenu
 
 local MenuTitleCorner = Instance.new("UICorner")
 MenuTitleCorner.CornerRadius = UDim.new(0, 8)
-MenuTitleCorner.Parent = MainMenu
+MenuTitleCorner.Parent = MenuTitle
 
+-- [버튼 1]: 부스터 버튼
 local FpsButton = Instance.new("TextButton")
 FpsButton.Name = "FpsButton"
-FpsButton.Size = UDim2.new(0.9, 0, 0, 40)
+FpsButton.Size = UDim2.new(0.9, 0, 0, 35)
 FpsButton.Position = UDim2.new(0.05, 0, 0, 45) 
 FpsButton.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
 FpsButton.Text = "FPS Booster"
@@ -142,10 +141,80 @@ local FpsCorner = Instance.new("UICorner")
 FpsCorner.CornerRadius = UDim.new(0, 4)
 FpsCorner.Parent = FpsButton
 
---------------------------------------------------------------------------------
--- 상호작용 및 최적화 작동 로직
---------------------------------------------------------------------------------
+-- [버튼 2]: ★ 유리 수동 잠금 버튼 추가
+local SelectButton = Instance.new("TextButton")
+SelectButton.Name = "SelectButton"
+SelectButton.Size = UDim2.new(0.9, 0, 0, 35)
+SelectButton.Position = UDim2.new(0.05, 0, 0, 90) 
+SelectButton.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
+SelectButton.Text = "Select Glass (유리 지정)"
+SelectButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+SelectButton.TextSize = 12
+SelectButton.Font = Enum.Font.SourceSansBold
+SelectButton.ZIndex = 502
+SelectButton.Parent = MainMenu
 
+local SelectCorner = Instance.new("UICorner")
+SelectCorner.CornerRadius = UDim.new(0, 4)
+SelectCorner.Parent = SelectButton
+
+--------------------------------------------------------------------------------
+-- 🛡️ 수동 유저 지정 화이트리스트 시스템 관련 변수
+--------------------------------------------------------------------------------
+local WhitelistedTextures = {}
+local WhitelistedObjects = {}
+local isSelecting = false
+
+-- 유리 선택 모드 토글
+SelectButton.MouseButton1Click:Connect(function()
+    isSelecting = not isSelecting
+    if isSelecting then
+        SelectButton.Text = "Click the Glass in Game!"
+        SelectButton.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+    else
+        SelectButton.Text = "Select Glass (유리 지정)"
+        SelectButton.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
+    end
+end)
+
+-- 마우스 클릭 시 유리를 기억하는 로직
+Mouse.Button1Down:Connect(function()
+    if isSelecting and Mouse.Target then
+        local target = Mouse.Target
+        
+        -- 오브젝트 본인 등록
+        WhitelistedObjects[target] = true
+        
+        -- 조상 폴더/모델이 있다면 통째로 보호망 등록
+        local p = target.Parent
+        if p and p ~= Workspace then
+            WhitelistedObjects[p] = true
+        end
+        
+        -- MeshPart일 경우 고유 텍스처 ID 추출하여 차단 목록에 등록
+        if target:IsA("MeshPart") and target.TextureID ~= "" then
+            WhitelistedTextures[target.TextureID] = true
+        end
+        
+        -- SurfaceAppearance 텍스처 ID 추출
+        local sa = target:FindFirstChildOfClass("SurfaceAppearance")
+        if sa and sa.TextureId ~= "" then
+            WhitelistedTextures[sa.TextureId] = true
+        end
+        
+        SelectButton.Text = "Locked: " .. target.Name .. "!"
+        SelectButton.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
+        isSelecting = false
+        
+        task.wait(1.5)
+        SelectButton.Text = "Select Another Glass (추가 지정)"
+        SelectButton.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
+    end
+end)
+
+--------------------------------------------------------------------------------
+-- GUI 드래그 및 단축키 상호작용
+--------------------------------------------------------------------------------
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if not gameProcessed and input.KeyCode == Enum.KeyCode.Insert then
         ScreenGui.Enabled = not ScreenGui.Enabled
@@ -178,7 +247,12 @@ LogoButton.MouseButton1Click:Connect(function()
     MainMenu.Visible = not MainMenu.Visible
 end)
 
+--------------------------------------------------------------------------------
+-- 최적화 실행 메인 로직
+--------------------------------------------------------------------------------
 FpsButton.MouseButton1Click:Connect(function()
+    if isSelecting then return end -- 선택 중일 때는 작동 안 함
+    
     FpsButton.Text = "Boosted!"
     FpsButton.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
     FpsButton.Active = false
@@ -191,25 +265,34 @@ FpsButton.MouseButton1Click:Connect(function()
         end
     end
 
-    -- 🛡️ [수정 핵심]: 투명도가 있거나 유리창 키워드가 들어간 MeshPart를 감지하는 필터
+    -- 유리를 판별하는 4중 보안 필터 함수
     local function isGlassObject(instance)
         if not instance or not instance:IsA("Instance") then return false end
         
-        -- 1. 본인 검사 (유리 재질이거나, 투명도가 0보다 큰 경우 유리창으로 판단)
-        if instance:IsA("BasePart") then
-            if instance.Material == Enum.Material.Glass or instance.Transparency > 0 then
-                return true
-            end
+        -- 1. [★핵심] 유저가 수동으로 클릭하여 지정한 오브젝트/부모인가?
+        if WhitelistedObjects[instance] or WhitelistedObjects[instance.Parent] then
+            return true
         end
         
-        -- 2. 조상 검사 (부모 폴더 중 유리창/윈도우 관련 단어가 있거나 투명한 파트가 포함된 경우)
+        -- 2. [★핵심] 유저가 클릭했던 유리의 텍스처 ID를 공유하는가?
+        if instance:IsA("MeshPart") and WhitelistedTextures[instance.TextureID] then
+            return true
+        end
+        local sa = instance:FindFirstChildOfClass("SurfaceAppearance")
+        if sa and WhitelistedTextures[sa.TextureId] then
+            return true
+        end
+        
+        -- 3. 시스템 기본 감지 (재질이 진짜 유리이거나 투명도가 있는가?)
+        if instance:IsA("BasePart") and (instance.Material == Enum.Material.Glass or instance.Transparency > 0) then
+            return true
+        end
+        
+        -- 4. 조상 이름 탐지
         local current = instance
         while current and current ~= Workspace and current ~= game do
             local nameLower = string.lower(current.Name)
-            if string.find(nameLower, "collision") or string.find(nameLower, "glass") or string.find(nameLower, "window") or string.find(nameLower, "pane") then
-                return true
-            end
-            if current:IsA("BasePart") and (current.Material == Enum.Material.Glass or current.Transparency > 0) then
+            if string.find(nameLower, "collision") or string.find(nameLower, "glass") or string.find(nameLower, "window") then
                 return true
             end
             current = current.Parent
@@ -230,42 +313,27 @@ FpsButton.MouseButton1Click:Connect(function()
         return false
     end
 
-    -- 맵 최적화 대규모 루프
+    -- 맵 텍스처 최적화 루프
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if not isProtected(obj) then
             
-            -- 유리 감지망에 걸린 필터는 텍스처와 형태를 완벽히 유지
+            -- 구출 명단에 등록된 유리 관련 에셋은 '손끝 하나 대지 않고' 완벽히 패스합니다.
             if isGlassObject(obj) then
-                if obj:IsA("BasePart") and obj.Material == Enum.Material.Glass then
-                    obj.Material = Enum.Material.Glass
-                end
+                -- 구조 성공: 재질, 텍스처 모두 원본 유지
             else
-                -- 유리가 아닌 일반 건물, 도로 등만 최적화 진행
+                -- 구출되지 않은 일반 건물들만 찰흙 최적화 진행
                 if obj:IsA("BasePart") then
-                    local nameLower = string.lower(obj.Name)
-                    -- 3중 예외 처리 필터링
-                    if not string.find(nameLower, "collision") and not string.find(nameLower, "glass") and not string.find(nameLower, "window") and obj.Material ~= Enum.Material.Glass then
-                        if obj.Material ~= Enum.Material.ForceField then
-                            obj.Material = _G.TargetMaterial
-                            obj.Reflectance = 0
-                            
-                            -- [★옵션]: ProtectMeshPartTextures 가 false 일 때만 MeshPart 텍스처 제거
-                            if obj:IsA("MeshPart") and not _G.ProtectMeshPartTextures then
-                                obj.TextureID = ""
-                            end
+                    if obj.Material ~= Enum.Material.ForceField then
+                        obj.Material = _G.TargetMaterial
+                        obj.Reflectance = 0
+                        if obj:IsA("MeshPart") then
+                            obj.TextureID = ""
                         end
                     end
                 elseif obj:IsA("SpecialMesh") then
-                    if not _G.ProtectMeshPartTextures then
-                        obj.TextureId = ""
-                    end
-                elseif obj:IsA("Texture") or obj:IsA("Decal") then
+                    obj.TextureId = ""
+                elseif obj:IsA("Texture") or obj:IsA("Decal") or obj:IsA("SurfaceAppearance") then
                     obj:Destroy()
-                elseif obj:IsA("SurfaceAppearance") then
-                    -- [★옵션]: ProtectMeshPartTextures 가 false 일 때만 정밀 텍스처 제거
-                    if not _G.ProtectMeshPartTextures then
-                        obj:Destroy()
-                    end
                 elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") or obj:IsA("Sparkles") or obj:IsA("Fire") then
                     obj:Destroy()
                 end
@@ -276,12 +344,12 @@ FpsButton.MouseButton1Click:Connect(function()
 
     -- 불필요한 장식품 제거 목록
     local keywords = {
-        "tree", "grass", "bush", "foliage", "plant", "flower", "deco", "decoration", "glass"
+        "tree", "grass", "bush", "foliage", "plant", "flower", "deco", "decoration"
     }
 
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if not isProtected(obj) then
-            -- 우리가 지켜야 할 투명 유리창은 자동 제거 목록에 들어가도 파괴하지 않음
+            -- 지정된 유리는 자동 제거 키워드에 걸려도 파괴하지 않고 살립니다.
             if not isGlassObject(obj) and (obj:IsA("Model") or obj:IsA("MeshPart") or obj:IsA("Part")) then
                 local name = obj.Name:lower()
                 for _, keyword in ipairs(keywords) do
