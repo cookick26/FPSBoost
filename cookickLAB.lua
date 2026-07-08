@@ -234,7 +234,7 @@ FpsButton.MouseButton1Click:Connect(function()
     -- 불필요한 장식품 제거
     local keywords = {
         "tree",
-        "glass"   
+        "glass",   
         "grass",
         "bush",
         "foliage",
