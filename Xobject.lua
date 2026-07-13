@@ -23,19 +23,10 @@ for _, obj in ipairs(game:GetService("Workspace"):GetDescendants()) do
         end
     end
 
-    -- 2. 조건에 따라 제거하거나 투명도를 조절
+    -- 2. 조건에 해당하면 오브젝트 제거
     if shouldDestroy then
         pcall(function()
             obj:Destroy()
         end)
-    else
-        -- 제거 대상이 아니라면 이름과 타입을 확인하여 투명도 조절
-        if obj:IsA("MeshPart") and obj.Name == "Barricade" then
-            obj.Transparency = 0.36
-        elseif obj:IsA("Part") and obj.Name == "Divider" then
-            obj.Transparency = 0.53
-        elseif obj:IsA("MeshPart") and obj.Name == "Rubble Pile" then
-            obj.Transparency = 0.4
-        end
     end
 end
