@@ -7,7 +7,7 @@ local LocalPlayer = Players.LocalPlayer
 -- 설정 (Configuration)
 local FOV_RADIUS = 120
 local SMOOTHNESS = 4 -- 부드러움 조절 (0.1 = 자연스러움, 0.5 = 강하게 고정)
-local AIM_KEY = Enum.KeyCode.Q
+local AIM_KEY = Enum.KeyCode.P
 
 -- 가장 가까운 대상을 찾는 함수
 local function getClosest()
