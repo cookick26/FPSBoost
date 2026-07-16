@@ -5,11 +5,11 @@ local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
 -- 설정 (Configuration)
-local FOV_RADIUS = 120
-local SMOOTHNESS = 4 -- 부드러움 조절 (0.1 = 자연스러움, 0.5 = 강함)
-local AIM_KEY = Enum.KeyCode.P -- 조준 트리거 키
+local FOV_RADIUS = 200
+local SMOOTHNESS = 4 -- 부드러움 조절 (0.1 = 자연스러움, 0.5 = 강하게 고정)
+local AIM_KEY = Enum.KeyCode.P
 
--- 가장 가까운 적을 찾는 함수
+-- 가장 가까운 대상을 찾는 함수
 local function getClosest()
     local target = nil
     local shortestDist = FOV_RADIUS
@@ -17,14 +17,12 @@ local function getClosest()
 
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character then
-            -- 문법 오류 수정: FindFirstChildOfClass로 변경
-            local hum = p.Character:FindFirstChildOfClass("Humanoid")
+            -- 휴머노이드(체력) 및 헤드(또는 몸통) 확인
+            local hum = p.Character:FindFirstChildOfClass("Humanoid") -- 오타 수정: FindFirstChildOfClass
             local head = p.Character:FindFirstChild("Head") or p.Character:FindFirstChild("UpperTorso")
             
-            -- 적이 살아있는지 확인
             if head and hum and hum.Health > 0 then
                 local pos, onScreen = Camera:WorldToViewportPoint(head.Position)
-                
                 if onScreen then
                     local dist = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
                     if dist < shortestDist then
@@ -38,22 +36,19 @@ local function getClosest()
     return target
 end
 
--- 마우스 이동 루프 인터럽트
+-- 프레임마다 마우스 커서를 타겟으로 부드럽게 이동시키는 루프
 RunService.RenderStepped:Connect(function()
     if UserInputService:IsKeyDown(AIM_KEY) then
         local targetPos = getClosest()
-        
         if targetPos then
             local mousePos = UserInputService:GetMouseLocation()
             
-            -- 잘려있던 마우스 조준 이동 로직 완성
+            -- 현재 마우스 위치와 타겟 위치의 차이를 계산하여 SMOOTHNESS 비율만큼 이동
             local diffX = (targetPos.X - mousePos.X) * SMOOTHNESS
             local diffY = (targetPos.Y - mousePos.Y) * SMOOTHNESS
             
-            -- 로블록스 표준 API를 사용하여 마우스 커서를 목표물 쪽으로 부드럽게 이동
-            -- (참고: 로컬 스크립트 내 인젝터 환경에 따라 mousemoverel 함수를 대신 사용할 수도 있습니다)
-            UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-            -- 화면 픽셀 단위 조정을 위해 의도된 마우스 상대 이동값 적용
+            -- 마우스 커서 위치 업데이트
+            mousemoverel(diffX, diffY)
         end
     end
 end)
