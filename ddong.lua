@@ -1,3 +1,13 @@
+task.spawn(function()
+    local success, err = pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+    end)
+    if not success then
+        warn("Infinite Yield 로드 실패: " .. tostring(err))
+    end
+end)
+
+-- 2. 에임봇 스크립트 설정 및 실행
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -6,7 +16,7 @@ local LocalPlayer = Players.LocalPlayer
 
 -- 설정 (Configuration)
 local FOV_RADIUS = 120
-local SMOOTHNESS = 4 -- 부드러움 조절 (0.1 = 자연스러움, 0.5 = 강하게 고정)
+local SMOOTHNESS = 4 -- 부드러움 조절 (값이 크면 빠르게 고정되지만 에임이 튈 수 있음)
 local AIM_KEY = Enum.KeyCode.P
 
 -- 가장 가까운 대상을 찾는 함수
@@ -18,7 +28,7 @@ local function getClosest()
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character then
             -- 휴머노이드(체력) 및 헤드(또는 몸통) 확인
-            local hum = p.Character:FindFirstChildOfClass("Humanoid") -- 오타 수정: FindFirstChildOfClass
+            local hum = p.Character:FindFirstChildOfClass("Humanoid")
             local head = p.Character:FindFirstChild("Head") or p.Character:FindFirstChild("UpperTorso")
             
             if head and hum and hum.Health > 0 then
