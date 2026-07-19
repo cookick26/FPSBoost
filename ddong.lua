@@ -15,8 +15,8 @@ local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
 -- 설정 (Configuration)
-local FOV_RADIUS = 50
-local SMOOTHNESS = 6 -- 부드러움 조절 (값이 크면 빠르게 고정되지만 에임이 튈 수 있음)
+local FOV_RADIUS = 55
+local SMOOTHNESS = 10 -- 부드러움 조절 (값이 크면 빠르게 고정되지만 에임이 튈 수 있음)
 local AIM_KEY = Enum.KeyCode.P
 
 -- 가장 가까운 대상을 찾는 함수
