@@ -24,7 +24,7 @@ local Settings = {
     HitboxSize = 5,
     HitboxTransparency = 0,
     HitboxColor = Color3.fromRGB(255, 255, 255),
-    HitboxEnabled = true
+    HitboxEnabled = false
 }
 
 local UiVisible = true
