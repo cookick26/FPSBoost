@@ -439,7 +439,7 @@ PlayerService.PlayerAdded:Connect(function(v)
 end)
 
 ----------------------------------------------------------------                
--- 5. 에임봇 로직 (원래 방식)
+-- 5. 에임봇 로직 (우클릭으로 작동)
 ----------------------------------------------------------------
 local function getClosest()
     local target = nil
@@ -483,7 +483,7 @@ RunService.RenderStepped:Connect(function()
     FovCircle.Position = mousePos
     FovCircle.Radius = Settings.FOV
     
-    if UserInputService:IsKeyDown(Settings.AimKey) then
+    if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
         local targetPos = getClosest()
         if targetPos then
             local diffX = targetPos.X - mousePos.X
