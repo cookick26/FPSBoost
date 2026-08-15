@@ -28,6 +28,7 @@ local Settings = {
 }
 
 local UiVisible = true
+local WaitingForKeyPress = false
 
 ----------------------------------------------------------------                
 -- 1. FOV 시각화 원(Drawing) 설정
@@ -188,12 +189,12 @@ createSlider("SMOOTHING", 1, 15, Settings.MULTIPLIER, 85, function(val)
 end)
 
 -- 3. ESP 거리 제한 슬라이더
-createSlider("ESP DISTANCE", 10, 5000, Settings.ESPDistance, 135, function(val)
+createSlider("ESP DISTANCE", 10, 10000, Settings.ESPDistance, 135, function(val)
     Settings.ESPDistance = val
 end)
 
 -- 4. 에임봇 거리 제한 슬라이더
-createSlider("AIMBOT DISTANCE", 100, 5000, Settings.AimbotDistance, 185, function(val)
+createSlider("AIMBOT DISTANCE", 100, 10000, Settings.AimbotDistance, 185, function(val)
     Settings.AimbotDistance = val
 end)
 
@@ -238,10 +239,77 @@ TransToggleButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- 7. AIM PART 선택 버튼
+-- 7. AIM KEY 설정 버튼
+local AimKeyLabel = Instance.new("TextLabel")
+AimKeyLabel.Size = UDim2.new(1, -20, 0, 20)
+AimKeyLabel.Position = UDim2.new(0, 10, 0, 340)
+AimKeyLabel.Text = "AIM KEY : RMB"
+AimKeyLabel.TextColor3 = Color3.fromRGB(105, 12, 12)
+AimKeyLabel.BackgroundTransparency = 1
+AimKeyLabel.TextXAlignment = Enum.TextXAlignment.Left
+AimKeyLabel.Font = Enum.Font.SourceSans
+AimKeyLabel.TextSize = 16
+AimKeyLabel.Parent = Frame
+
+local AimKeyButton = Instance.new("TextButton")
+AimKeyButton.Size = UDim2.new(1, -20, 0, 22)
+AimKeyButton.Position = UDim2.new(0, 10, 0, 362)
+AimKeyButton.BackgroundColor3 = Color3.fromRGB(105, 12, 12)
+AimKeyButton.Text = "PRESS TO SET KEY"
+AimKeyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+AimKeyButton.Font = Enum.Font.SourceSansBold
+AimKeyButton.TextSize = 13
+AimKeyButton.Parent = Frame
+
+local AimKeyButtonCorner = Instance.new("UICorner")
+AimKeyButtonCorner.CornerRadius = UDim.new(0, 5)
+AimKeyButtonCorner.Parent = AimKeyButton
+
+-- 키 이름 변환 함수
+local function getKeyName(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        return "LMB"
+    elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+        return "RMB"
+    elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
+        return "MMB"
+    elseif input.KeyCode then
+        return input.KeyCode.Name
+    end
+    return "UNKNOWN"
+end
+
+AimKeyButton.MouseButton1Click:Connect(function()
+    WaitingForKeyPress = true
+    AimKeyButton.Text = "WAITING FOR INPUT..."
+    AimKeyButton.BackgroundColor3 = Color3.fromRGB(200, 100, 100)
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if WaitingForKeyPress and not gameProcessed then
+        Settings.AimKey = input.UserInputType
+        if input.KeyCode then
+            Settings.AimKey = input.KeyCode
+        end
+        
+        local keyName = getKeyName(input)
+        AimKeyLabel.Text = "AIM KEY : " .. keyName
+        AimKeyButton.Text = "PRESS TO SET KEY"
+        AimKeyButton.BackgroundColor3 = Color3.fromRGB(105, 12, 12)
+        WaitingForKeyPress = false
+    end
+    
+    if not gameProcessed and input.KeyCode == Settings.ToggleKey then
+        UiVisible = not UiVisible
+        Frame.Visible = UiVisible       
+        FovCircle.Visible = UiVisible   
+    end
+end)
+
+-- 8. AIM PART 선택 버튼
 local PartLabel = Instance.new("TextLabel")
 PartLabel.Size = UDim2.new(1, -20, 0, 20)
-PartLabel.Position = UDim2.new(0, 10, 0, 340)
+PartLabel.Position = UDim2.new(0, 10, 0, 395)
 PartLabel.Text = "AIM PART : " .. tostring(Settings.TargetPart)
 PartLabel.TextColor3 = Color3.fromRGB(105, 12, 12)
 PartLabel.BackgroundTransparency = 1
@@ -252,7 +320,7 @@ PartLabel.Parent = Frame
 
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Size = UDim2.new(1, -20, 0, 22)
-ToggleButton.Position = UDim2.new(0, 10, 0, 362)
+ToggleButton.Position = UDim2.new(0, 10, 0, 417)
 ToggleButton.BackgroundColor3 = Color3.fromRGB(105, 12, 12)
 ToggleButton.Text = "SWITCH TO BODY"
 ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -277,39 +345,24 @@ ToggleButton.MouseButton1Click:Connect(function()
 end)
 
 -- 체크박스 5개
-createCheckbox("Show Name", Settings.ShowESPName, 395, function(val)
+createCheckbox("Show Name", Settings.ShowESPName, 450, function(val)
     Settings.ShowESPName = val
 end)
 
-createCheckbox("Show Box", Settings.ShowESPBox, 433, function(val)
+createCheckbox("Show Box", Settings.ShowESPBox, 488, function(val)
     Settings.ShowESPBox = val
 end)
 
-createCheckbox("Show Health", Settings.ShowESPHealth, 471, function(val)
+createCheckbox("Show Health", Settings.ShowESPHealth, 526, function(val)
     Settings.ShowESPHealth = val
 end)
 
-createCheckbox("Show Distance", Settings.ShowESPDistance, 509, function(val)
+createCheckbox("Show Distance", Settings.ShowESPDistance, 564, function(val)
     Settings.ShowESPDistance = val
 end)
 
-createCheckbox("Hitbox Enabled", Settings.HitboxEnabled, 547, function(val)
-    Settings.HitboxEnabled = val
-end)
-
 ----------------------------------------------------------------                
--- 3. Insert 키 토글 (UI & FOV 원)
-----------------------------------------------------------------
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and input.KeyCode == Settings.ToggleKey then
-        UiVisible = not UiVisible
-        Frame.Visible = UiVisible       
-        FovCircle.Visible = UiVisible   
-    end
-end)
-
-----------------------------------------------------------------                
--- 4. ESP 로직 (거리 표시만)
+-- 3. ESP 로직 (거리 표시만)
 ----------------------------------------------------------------
 local function ESP(player)
     local DrawObject = {
@@ -439,7 +492,7 @@ PlayerService.PlayerAdded:Connect(function(v)
 end)
 
 ----------------------------------------------------------------                
--- 5. 에임봇 로직 (우클릭으로 작동)
+-- 4. 에임봇 로직 (설정된 키로 작동)
 ----------------------------------------------------------------
 local function getClosest()
     local target = nil
@@ -483,7 +536,17 @@ RunService.RenderStepped:Connect(function()
     FovCircle.Position = mousePos
     FovCircle.Radius = Settings.FOV
     
-    if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+    local isAimKeyPressed = false
+    
+    -- KeyCode 확인
+    if typeof(Settings.AimKey) == "EnumItem" and Settings.AimKey.EnumType == Enum.KeyCode then
+        isAimKeyPressed = UserInputService:IsKeyDown(Settings.AimKey)
+    -- UserInputType 확인
+    elseif typeof(Settings.AimKey) == "EnumItem" and Settings.AimKey.EnumType == Enum.UserInputType then
+        isAimKeyPressed = UserInputService:IsMouseButtonPressed(Settings.AimKey)
+    end
+    
+    if isAimKeyPressed then
         local targetPos = getClosest()
         if targetPos then
             local diffX = targetPos.X - mousePos.X
@@ -498,7 +561,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 ----------------------------------------------------------------                
--- 6. 히트박스 로직 (체크박스 활성화 시에만 작동)
+-- 5. 히트박스 로직 (체크박스 활성화 시에만 작동)
 ----------------------------------------------------------------
 RunService.RenderStepped:Connect(function()
     for _, v in pairs(PlayerService:GetPlayers()) do
