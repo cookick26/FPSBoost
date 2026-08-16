@@ -8,7 +8,7 @@ local LocalPlayer = PlayerService.LocalPlayer
 -- 실시간 설정 변수
 local Settings = {
     FOV = 100,
-    MULTIPLIER = 12,
+    MULTIPLIER = 5,
     Enabled = true,
     ESPEnabled = true,
     AimKey = Enum.UserInputType.MouseButton2,
@@ -24,11 +24,14 @@ local Settings = {
     HitboxSize = 5,
     HitboxTransparency = 0,
     HitboxColor = Color3.fromRGB(255, 255, 255),
-    HitboxEnabled = false
+    HitboxEnabled = false,
+    -- 에임봇 모드
+    AimbotMode = "HOLD" -- "HOLD" 또는 "TOGGLE"
 }
 
 local UiVisible = true
 local WaitingForKeyPress = false
+local AimbotActive = false
 
 ----------------------------------------------------------------                
 -- 1. FOV 시각화 원(Drawing) 설정
@@ -50,7 +53,7 @@ pcall(function() ScreenGui.Parent = CoreGui end)
 if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
 local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 220, 0, 600)
+Frame.Size = UDim2.new(0, 220, 0, 650)
 Frame.AnchorPoint = Vector2.new(0.5, 0.5) 
 Frame.Position = UDim2.new(0.5, 0, 0.5, 0)
 Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -265,6 +268,46 @@ local AimKeyButtonCorner = Instance.new("UICorner")
 AimKeyButtonCorner.CornerRadius = UDim.new(0, 5)
 AimKeyButtonCorner.Parent = AimKeyButton
 
+-- 8. AIMBOT MODE 토글 버튼
+local ModeLabel = Instance.new("TextLabel")
+ModeLabel.Size = UDim2.new(1, -20, 0, 20)
+ModeLabel.Position = UDim2.new(0, 10, 0, 395)
+ModeLabel.Text = "AIMBOT MODE : " .. Settings.AimbotMode
+ModeLabel.TextColor3 = Color3.fromRGB(105, 12, 12)
+ModeLabel.BackgroundTransparency = 1
+ModeLabel.TextXAlignment = Enum.TextXAlignment.Left
+ModeLabel.Font = Enum.Font.SourceSans
+ModeLabel.TextSize = 16
+ModeLabel.Parent = Frame
+
+local ModeButton = Instance.new("TextButton")
+ModeButton.Size = UDim2.new(1, -20, 0, 22)
+ModeButton.Position = UDim2.new(0, 10, 0, 417)
+ModeButton.BackgroundColor3 = Color3.fromRGB(105, 12, 12)
+ModeButton.Text = "SWITCH TO TOGGLE"
+ModeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ModeButton.Font = Enum.Font.SourceSansBold
+ModeButton.TextSize = 13
+ModeButton.Parent = Frame
+
+local ModeButtonCorner = Instance.new("UICorner")
+ModeButtonCorner.CornerRadius = UDim.new(0, 5)
+ModeButtonCorner.Parent = ModeButton
+
+ModeButton.MouseButton1Click:Connect(function()
+    if Settings.AimbotMode == "HOLD" then
+        Settings.AimbotMode = "TOGGLE"
+        ModeLabel.Text = "AIMBOT MODE : TOGGLE"
+        ModeButton.Text = "SWITCH TO HOLD"
+        AimbotActive = false
+    else
+        Settings.AimbotMode = "HOLD"
+        ModeLabel.Text = "AIMBOT MODE : HOLD"
+        ModeButton.Text = "SWITCH TO TOGGLE"
+        AimbotActive = false
+    end
+end)
+
 -- 키 이름 변환 함수
 local function getKeyName(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -304,12 +347,26 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
         Frame.Visible = UiVisible       
         FovCircle.Visible = UiVisible   
     end
+
+    -- 토글 모드에서 키 입력 감지
+    if Settings.AimbotMode == "TOGGLE" and not gameProcessed and not WaitingForKeyPress then
+        local isAimKey = false
+        if typeof(Settings.AimKey) == "EnumItem" and Settings.AimKey.EnumType == Enum.KeyCode then
+            isAimKey = (input.KeyCode == Settings.AimKey)
+        elseif typeof(Settings.AimKey) == "EnumItem" and Settings.AimKey.EnumType == Enum.UserInputType then
+            isAimKey = (input.UserInputType == Settings.AimKey)
+        end
+        
+        if isAimKey then
+            AimbotActive = not AimbotActive
+        end
+    end
 end)
 
--- 8. AIM PART 선택 버튼
+-- 9. AIM PART 선택 버튼
 local PartLabel = Instance.new("TextLabel")
 PartLabel.Size = UDim2.new(1, -20, 0, 20)
-PartLabel.Position = UDim2.new(0, 10, 0, 395)
+PartLabel.Position = UDim2.new(0, 10, 0, 450)
 PartLabel.Text = "AIM PART : " .. tostring(Settings.TargetPart)
 PartLabel.TextColor3 = Color3.fromRGB(105, 12, 12)
 PartLabel.BackgroundTransparency = 1
@@ -320,7 +377,7 @@ PartLabel.Parent = Frame
 
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Size = UDim2.new(1, -20, 0, 22)
-ToggleButton.Position = UDim2.new(0, 10, 0, 417)
+ToggleButton.Position = UDim2.new(0, 10, 0, 472)
 ToggleButton.BackgroundColor3 = Color3.fromRGB(105, 12, 12)
 ToggleButton.Text = "SWITCH TO BODY"
 ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -345,19 +402,19 @@ ToggleButton.MouseButton1Click:Connect(function()
 end)
 
 -- 체크박스 5개
-createCheckbox("Show Name", Settings.ShowESPName, 450, function(val)
+createCheckbox("Show Name", Settings.ShowESPName, 505, function(val)
     Settings.ShowESPName = val
 end)
 
-createCheckbox("Show Box", Settings.ShowESPBox, 488, function(val)
+createCheckbox("Show Box", Settings.ShowESPBox, 543, function(val)
     Settings.ShowESPBox = val
 end)
 
-createCheckbox("Show Health", Settings.ShowESPHealth, 526, function(val)
+createCheckbox("Show Health", Settings.ShowESPHealth, 581, function(val)
     Settings.ShowESPHealth = val
 end)
 
-createCheckbox("Show Distance", Settings.ShowESPDistance, 564, function(val)
+createCheckbox("Show Distance", Settings.ShowESPDistance, 619, function(val)
     Settings.ShowESPDistance = val
 end)
 
@@ -492,7 +549,7 @@ PlayerService.PlayerAdded:Connect(function(v)
 end)
 
 ----------------------------------------------------------------                
--- 4. 에임봇 로직 (설정된 키로 작동)
+-- 4. 에임봇 로직 (홀드/토글 모드)
 ----------------------------------------------------------------
 local function getClosest()
     local target = nil
@@ -538,12 +595,16 @@ RunService.RenderStepped:Connect(function()
     
     local isAimKeyPressed = false
     
-    -- KeyCode 확인
-    if typeof(Settings.AimKey) == "EnumItem" and Settings.AimKey.EnumType == Enum.KeyCode then
-        isAimKeyPressed = UserInputService:IsKeyDown(Settings.AimKey)
-    -- UserInputType 확인
-    elseif typeof(Settings.AimKey) == "EnumItem" and Settings.AimKey.EnumType == Enum.UserInputType then
-        isAimKeyPressed = UserInputService:IsMouseButtonPressed(Settings.AimKey)
+    if Settings.AimbotMode == "HOLD" then
+        -- 홀드 모드
+        if typeof(Settings.AimKey) == "EnumItem" and Settings.AimKey.EnumType == Enum.KeyCode then
+            isAimKeyPressed = UserInputService:IsKeyDown(Settings.AimKey)
+        elseif typeof(Settings.AimKey) == "EnumItem" and Settings.AimKey.EnumType == Enum.UserInputType then
+            isAimKeyPressed = UserInputService:IsMouseButtonPressed(Settings.AimKey)
+        end
+    else
+        -- 토글 모드
+        isAimKeyPressed = AimbotActive
     end
     
     if isAimKeyPressed then
