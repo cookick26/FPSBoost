@@ -53,7 +53,7 @@ pcall(function() ScreenGui.Parent = CoreGui end)
 if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
 local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 220, 0, 650)
+Frame.Size = UDim2.new(0, 220, 0, 700)
 Frame.AnchorPoint = Vector2.new(0.5, 0.5) 
 Frame.Position = UDim2.new(0.5, 0, 0.5, 0)
 Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -192,17 +192,17 @@ createSlider("SMOOTHING", 1, 15, Settings.MULTIPLIER, 85, function(val)
 end)
 
 -- 3. ESP 거리 제한 슬라이더
-createSlider("ESP DISTANCE", 10, 10000, Settings.ESPDistance, 135, function(val)
+createSlider("ESP DISTANCE", 10, 5000, Settings.ESPDistance, 135, function(val)
     Settings.ESPDistance = val
 end)
 
 -- 4. 에임봇 거리 제한 슬라이더
-createSlider("AIMBOT DISTANCE", 100, 10000, Settings.AimbotDistance, 185, function(val)
+createSlider("AIMBOT DISTANCE", 100, 5000, Settings.AimbotDistance, 185, function(val)
     Settings.AimbotDistance = val
 end)
 
 -- 5. 히트박스 크기 슬라이더
-createSlider("HITBOX SIZE", 1, 50, Settings.HitboxSize, 235, function(val)
+createSlider("HITBOX SIZE", 1, 100, Settings.HitboxSize, 235, function(val)
     Settings.HitboxSize = val
 end)
 
@@ -401,7 +401,7 @@ ToggleButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- 체크박스 5개
+-- 체크박스들
 createCheckbox("Show Name", Settings.ShowESPName, 505, function(val)
     Settings.ShowESPName = val
 end)
@@ -416,6 +416,10 @@ end)
 
 createCheckbox("Show Distance", Settings.ShowESPDistance, 619, function(val)
     Settings.ShowESPDistance = val
+end)
+
+createCheckbox("Hitbox Enabled", Settings.HitboxEnabled, 657, function(val)
+    Settings.HitboxEnabled = val
 end)
 
 ----------------------------------------------------------------                
