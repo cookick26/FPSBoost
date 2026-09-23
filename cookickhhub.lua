@@ -197,7 +197,7 @@ createSlider("ESP DISTANCE", 10, 15000, Settings.ESPDistance, 135, function(val)
 end)
 
 -- 4. 에임봇 거리 제한 슬라이더
-createSlider("AIMBOT DISTANCE", 100, 5000, Settings.AimbotDistance, 185, function(val)
+createSlider("AIMBOT DISTANCE", 100, 15000, Settings.AimbotDistance, 185, function(val)
     Settings.AimbotDistance = val
 end)
 
