@@ -192,7 +192,7 @@ createSlider("SMOOTHING", 1, 15, Settings.MULTIPLIER, 85, function(val)
 end)
 
 -- 3. ESP 거리 제한 슬라이더
-createSlider("ESP DISTANCE", 10, 5000, Settings.ESPDistance, 135, function(val)
+createSlider("ESP DISTANCE", 10, 15000, Settings.ESPDistance, 135, function(val)
     Settings.ESPDistance = val
 end)
 
